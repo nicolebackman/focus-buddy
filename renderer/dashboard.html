@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'">
+<title>Focus Buddy</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  body { background: var(--paper); }
+  .titlebar { height: 40px; -webkit-app-region: drag; position: sticky; top: 0; background: var(--paper); z-index: 5; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 32px 56px; display: flex; flex-direction: column; gap: 22px; }
+  h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -.02em; }
+  h2 { font-size: 1.15rem; font-weight: 700; }
+  /* hero: buddy on its aura, asterisks placed on a loose ring, headline beside */
+  .hero { display: grid; grid-template-columns: 260px 1fr; gap: 28px; align-items: center; }
+  .stagebox { position: relative; height: 240px; }
+  .stagebox .aura { inset: 6px 10px 0; }
+  .stagebox .pet { position: absolute; left: 50%; bottom: 14px; width: 150px; height: 160px; transform: translateX(-50%); }
+  .stagebox .say { position: absolute; left: 50%; top: 0; transform: translateX(-50%); white-space: nowrap; background: var(--card); padding: 7px 14px; border-radius: 16px; box-shadow: var(--shadow); font-family: var(--display); font-weight: 600; font-size: .9rem; }
+  .stagebox .say::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 12px; height: 12px; background: var(--card); transform: translateX(-50%) rotate(45deg); border-radius: 0 0 3px 0; }
+  .stagebox .ast { position: absolute; }
+  h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; line-height: 1; }
+  .hero p { color: var(--ink-2); font-size: 1.05rem; margin: 10px 0 18px; max-width: 46ch; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--line); font-size: .8rem; font-weight: 700; color: var(--ink-2); margin-bottom: 14px; }
+  .badge svg { width: 14px; height: 14px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .tile { background: var(--card); border-radius: 20px; padding: 16px 18px; box-shadow: var(--shadow); }
+  .tile b { display: block; font-family: var(--display); font-size: 2.1rem; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .tile span { color: var(--ink-2); font-size: .85rem; font-weight: 600; }
+  .tile small { display: block; color: var(--muted); font-size: .78rem; margin-top: 2px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: var(--card); border-radius: 24px; padding: 20px 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card .sub { color: var(--muted); font-size: .85rem; margin: -6px 0 0; }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart text { fill: var(--muted); font-size: 11px; font-family: var(--body); font-weight: 600; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .legend { display: flex; gap: 14px; font-size: .82rem; color: var(--ink-2); font-weight: 600; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .review { position: relative; overflow: hidden; }
+  .review .aura { width: 260px; height: 200px; right: -90px; top: -90px; --a: var(--lime); --b: var(--mint); opacity: .55; }
+  .review > * { position: relative; }
+  .review-body { white-space: pre-wrap; line-height: 1.55; color: var(--ink-2); }
+  .review-body .lab { display: block; font-family: var(--display); font-weight: 700; margin-top: 12px; color: var(--ink); }
+  .review-body .lab:first-child { margin-top: 0; }
+  .obs { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); }
+  .day { display: flex; flex-direction: column; gap: 10px; }
+  .day h3 { font-size: .95rem; color: var(--muted); font-weight: 700; }
+  .entry { background: var(--paper); border-radius: 16px; padding: 12px 14px; display: grid; grid-template-columns: 72px 1fr auto; gap: 12px; align-items: start; }
+  .entry time { font-family: var(--display); font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .tag { font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; background: var(--violet); color: #fff; }
+  .tag.checkin { background: var(--lime); color: #1D1916; }
+  .meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: .82rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .qa { display: flex; flex-direction: column; gap: 4px; font-size: .92rem; }
+  .qa .q { color: var(--muted); }
+  .qa .a { overflow-wrap: anywhere; color: var(--ink); }
+  .del { border: 0; background: none; color: var(--muted); font-size: .8rem; opacity: 0; }
+  .entry:hover .del, .del:focus-visible { opacity: 1; }
+  .empty { color: var(--muted); background: var(--paper); padding: 20px; border-radius: 16px; text-align: center; }
+  @media (max-width: 800px) { .hero { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } .cols { grid-template-columns: 1fr; } .wrap { padding-inline: 16px; } }
+</style>
+</head>
+<body class="mode-idle face-idle">
+<div class="titlebar"></div>
+<div class="wrap">
+  <header class="hero">
+    <div class="stagebox" id="stagebox">
+      <div class="aura"></div>
+      <div class="say" id="say">Hi again!</div>
+      <div class="pet" id="heroPet"></div>
+    </div>
+    <div>
+      <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>Your reflections stay on this Mac</span>
+      <h1 id="greet">Hello!</h1>
+      <p id="summary"></p>
+      <div class="actions">
+        <button class="btn primary" id="startBtn">Start focus</button>
+        <button class="btn ghost" id="checkinBtn">Check in</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="cols">
+    <div class="card">
+      <h2>Focus time, last 7 days</h2>
+      <p class="sub">Minutes in finished focus rounds</p>
+      <svg class="chart" id="weekChart" viewBox="0 0 440 200" role="img" aria-label="Focus minutes per day"></svg>
+    </div>
+    <div class="card">
+      <h2>How you've felt while working</h2>
+      <p class="sub">Daily average of your 1–5 ratings, last 14 days</p>
+      <svg class="chart" id="feelChart" viewBox="0 0 440 200" role="img" aria-label="Focus and energy ratings over time"></svg>
+      <div class="legend"><span><i style="background:var(--violet)"></i>Focus</span><span><i style="background:var(--pink)"></i>Energy</span></div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div class="card">
+      <h2>When you focus best</h2>
+      <p class="sub">Average focus and energy by time of day, last 30 days</p>
+      <svg class="chart" id="todChart" viewBox="0 0 440 180" role="img" aria-label="Focus and energy by time of day"></svg>
+      <div class="legend"><span><i style="background:var(--violet)"></i>Focus</span><span><i style="background:var(--pink)"></i>Energy</span></div>
+    </div>
+    <div class="card review">
+      <div class="aura"></div>
+      <h2 id="reviewTitle">Your buddy's review</h2>
+      <div id="review"></div>
+      <div class="row" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+        <button class="btn green small" id="askBtn">Look at my patterns</button>
+        <span class="sub" id="askNote" style="margin:0"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Reflection journal</h2>
+    <div id="journal" style="display:flex; flex-direction:column; gap:18px"></div>
+  </section>
+</div>
+<script src="pets.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

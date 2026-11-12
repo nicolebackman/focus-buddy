@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="../renderer/theme.css">
+<style>html,body{margin:0;background:transparent;width:1024px;height:1024px;overflow:hidden}
+.sq{position:absolute;left:100px;top:100px;width:824px;height:824px;border-radius:185px;background:#FAF7F2;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.05)}
+.aura{position:absolute;inset:110px 90px 60px;filter:blur(60px);--a:#F68BD3;--b:#8E78FF}
+.p{position:absolute;left:192px;top:150px;width:440px;height:470px}
+.s{position:absolute}</style>
+<body class="face-idle"><div class="sq"><div class="aura"></div><div class="p" id="p"></div></div>
+<script src="../renderer/pets.js"></script>
+<script>document.getElementById("p").innerHTML=Pets.petSVG("tomato","red");
+[["#6C4CF1",92,180,190],["#CFEF55",70,700,250],["#EA3A1F",80,690,640]].forEach(([c,s,x,y])=>{const d=document.createElement("div");d.className="s";d.style.left=x+"px";d.style.top=y+"px";d.innerHTML=Pets.sparkleSVG(c,s);document.querySelector(".sq").appendChild(d)})</script>
+<style>.pet-bob{animation:none}</style>

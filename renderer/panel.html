@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'">
+<title>Focus Buddy</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  html, body { background: transparent; height: 100%; overflow: hidden; }
+  .card { position: absolute; inset: 8px; background: var(--paper); border-radius: 26px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); }
+  .view { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px 18px; flex: 1; min-height: 0; overflow-y: auto; }
+  .view[hidden] { display: none; }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .head h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.1rem; letter-spacing: -.01em; }
+  .iconbtn { border: 0; background: var(--sunk); width: 28px; height: 28px; border-radius: 50%; font-weight: 700; font-size: 15px; line-height: 1; color: var(--ink-2); }
+  /* home hero */
+  .hero { position: relative; display: flex; align-items: center; gap: 12px; padding: 6px 0 2px; }
+  .hero .aura { width: 150px; height: 120px; left: -30px; top: -14px; opacity: .8; }
+  .hero .mini { position: relative; width: 74px; height: 80px; flex: none; }
+  .hero .txt { position: relative; min-width: 0; }
+  .mode { font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+  .clock { font-family: var(--display); font-weight: 700; font-size: 3.3rem; line-height: .95; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .today { margin-top: auto; background: var(--card); border-radius: 16px; padding: 12px 14px; font-size: .88rem; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .today b { font-family: var(--display); color: var(--ink); }
+  .updbar { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 16px; padding: 10px 10px 10px 14px; box-shadow: inset 0 0 0 1.5px var(--violet); }
+  .updbar div { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: .78rem; color: var(--ink-2); line-height: 1.3; }
+  .updbar b { font-family: var(--display); font-size: .92rem; color: var(--ink); }
+  .lens { display: flex; gap: 6px; flex-wrap: wrap; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1; }
+  .working { color: var(--ink-2); font-size: .92rem; margin: 0; }
+  .working b { color: var(--ink); }
+  .foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 12px 12px; border-top: 1px solid var(--line); background: var(--card); }
+  .foot button { border: 0; background: transparent; padding: 8px 4px; border-radius: 12px; font-weight: 700; font-size: .84rem; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .foot button:hover { background: var(--sunk); color: var(--ink); }
+  .foot svg { width: 18px; height: 18px; }
+  /* settings */
+  label.f { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .8rem; color: var(--ink-2); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tog { display: flex; gap: 10px; align-items: flex-start; font-size: .88rem; }
+  .tog input { width: 17px; height: 17px; margin-top: 1px; accent-color: var(--violet); flex: none; }
+  .note { font-size: .8rem; color: var(--muted); margin: 0; }
+  .pets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .petpick { border: 0; background: var(--card); border-radius: 14px; padding: 6px 2px 4px; box-shadow: inset 0 0 0 1.5px var(--line); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .7rem; font-weight: 700; color: var(--ink-2); }
+  .petpick .p { width: 40px; height: 44px; }
+  .petpick[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+  .swatches { display: flex; gap: 8px; }
+  .sw { width: 28px; height: 28px; border-radius: 50%; border: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); }
+  .sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+  /* chat */
+  .msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; min-height: 0; }
+  .msg { max-width: 86%; padding: 9px 13px; border-radius: 18px; font-size: .92rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg.pip { background: var(--card); box-shadow: var(--shadow); border-bottom-left-radius: 6px; align-self: flex-start; font-family: var(--display); font-weight: 600; }
+  .msg.me { background: var(--ink); color: var(--paper); border-bottom-right-radius: 6px; align-self: flex-end; }
+  .whohead { display: flex; align-items: center; gap: 10px; }
+  .whohead .mini { width: 40px; height: 44px; flex: none; position: relative; }
+  .compose { display: flex; gap: 8px; align-items: flex-end; }
+  .compose textarea { resize: none; height: 46px; max-height: 110px; border-radius: 18px; background: var(--card); }
+  .send { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--violet); color: #fff; display: grid; place-items: center; }
+  .rate { display: flex; flex-direction: column; gap: 6px; }
+  .scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .scale button { border: 0; box-shadow: inset 0 0 0 1.5px var(--line); background: var(--card); border-radius: 12px; padding: 6px 2px; font-size: .68rem; font-weight: 600; line-height: 1.15; color: var(--ink-2); }
+  .scale button b { display: block; font-family: var(--display); font-size: 1.05rem; color: var(--ink); }
+  .scale button[aria-pressed="true"] { background: var(--ink); box-shadow: none; color: var(--paper); }
+  .scale button[aria-pressed="true"] b { color: var(--paper); }
+  .typing { align-self: flex-start; display: flex; gap: 4px; padding: 13px 15px; background: var(--card); box-shadow: var(--shadow); border-radius: 18px; }
+  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: .2s } .typing i:nth-child(3) { animation-delay: .4s }
+  @keyframes blink { 0%,80%,100% { opacity: .25 } 40% { opacity: 1 } }
+  .linkbtn { border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: .8rem; padding: 0; }
+</style>
+</head>
+<body class="mode-idle face-idle">
+<div class="card">
+  <!-- HOME -->
+  <section class="view" id="home">
+    <div class="head">
+      <div class="mode" id="modeLabel">Ready when you are</div>
+      <button class="iconbtn" id="closeHome" title="Close" aria-label="Close">×</button>
+    </div>
+    <div class="updbar" id="updBar" hidden>
+      <div><b id="updTitle">Update ready</b><span>Download it, then replace the app in Applications.</span></div>
+      <button class="btn small accent" id="updGet">Download</button>
+      <button class="iconbtn" id="updX" title="Remind me later" aria-label="Dismiss update">×</button>
+    </div>
+    <div class="hero">
+      <div class="aura"></div>
+      <div class="mini pet-slot"></div>
+      <div class="txt">
+        <div class="clock" id="clock">25:00</div>
+      </div>
+    </div>
+    <div id="idleBox" style="display:flex; flex-direction:column; gap:12px">
+      <input type="text" id="intent" maxlength="140" placeholder="This round I'll…" aria-label="What will you focus on?">
+      <div class="lens" id="lens"></div>
+      <div class="row">
+        <button class="btn primary grow" id="startBtn">Start focus</button>
+        <button class="btn ghost" id="breakBtn">Break</button>
+      </div>
+    </div>
+    <div id="runBox" style="display:flex; flex-direction:column; gap:12px" hidden>
+      <p class="working" id="working"></p>
+      <div class="row">
+        <button class="btn primary grow" id="pauseBtn">Pause</button>
+        <button class="btn ghost" id="earlyBtn">Finish early</button>
+        <button class="btn ghost" id="stopBtn">Stop</button>
+      </div>
+    </div>
+    <div class="today" id="todayLine"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="settings" hidden>
+    <div class="head">
+      <h2>Settings</h2>
+      <button class="iconbtn" id="backSettings" title="Back" aria-label="Back">‹</button>
+    </div>
+    <div class="eyebrow">Your buddy</div>
+    <div class="pets" id="petPick"></div>
+    <div class="swatches" id="swatches"></div>
+    <label class="f" for="petName">Name<input type="text" id="petName" maxlength="24"></label>
+    <div class="eyebrow">Timer</div>
+    <div class="grid2">
+      <label class="f" for="sFocus">Focus (min)<input id="sFocus" type="number" min="1" max="180"></label>
+      <label class="f" for="sShort">Short break (min)<input id="sShort" type="number" min="1" max="60"></label>
+      <label class="f" for="sLong">Long break (min)<input id="sLong" type="number" min="1" max="90"></label>
+      <label class="f" for="sEvery">Long break every<input id="sEvery" type="number" min="2" max="8"></label>
+    </div>
+    <label class="tog" for="tAuto"><input type="checkbox" id="tAuto" data-key="autoBreak"> Start breaks automatically</label>
+    <label class="tog" for="tSound"><input type="checkbox" id="tSound" data-key="sound"> Chime when a timer ends</label>
+    <div class="eyebrow">Nudges & reflection</div>
+    <label class="tog" for="tNotes"><input type="checkbox" id="tNotes" data-key="notes"> Little notes during focus</label>
+    <label class="tog" for="tHourly"><input type="checkbox" id="tHourly" data-key="hourly"> Hourly stretch nudge when no timer is running</label>
+    <label class="tog" for="tFollow"><input type="checkbox" id="tFollow" data-key="followUp"> Ask a follow-up question after I answer</label>
+    <label class="tog" for="tLogin"><input type="checkbox" id="tLogin" data-key="openAtLogin"> Open when I log in</label>
+    <div class="eyebrow">Smarter buddy (optional)</div>
+    <p class="note">Add your Anthropic API key and your buddy uses Claude to ask follow-up questions and review your patterns. The key stays on this Mac, encrypted.</p>
+    <div class="row">
+      <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" style="flex:1; min-width:0">
+      <button class="btn small accent" id="saveKey">Save</button>
+    </div>
+    <p class="note" id="keyNote"></p>
+  </section>
+
+  <!-- CHAT -->
+  <section class="view" id="chat" hidden>
+    <div class="head">
+      <div class="whohead"><div class="mini pet-slot"></div><h2 id="chatTitle">Check-in</h2></div>
+      <button class="iconbtn" id="closeChat" title="Close" aria-label="Close">×</button>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div id="chatCtl"></div>
+  </section>
+
+  <nav class="foot" id="foot">
+    <button id="goCheckin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>Check in</button>
+    <button id="goDash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Dashboard</button>
+    <button id="goSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Settings</button>
+  </nav>
+</div>
+<script src="pets.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>

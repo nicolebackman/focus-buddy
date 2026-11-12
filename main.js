@@ -7,7 +7,8 @@ const fs = require("fs");
 const ai = require("./ai");
 
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
-if (process.env.FB_USERDATA) app.setPath("userData", process.env.FB_USERDATA); // dev/testing only
+const DEV = !app.isPackaged; // testing switches below only work when running from source, never in the shipped app
+if (DEV && process.env.FB_USERDATA) app.setPath("userData", process.env.FB_USERDATA);
 if (!app.requestSingleInstanceLock()) app.quit();
 
 // ---------------------------------------------------------------- storage
@@ -25,10 +26,18 @@ const persona = () => ({ name: petName(), species: (SPECIES[S().pet] || SPECIES.
 let data = { settings: { ...DEFAULT_SETTINGS }, reflections: [], timer: null, apiKeyEnc: "", insight: null };
 
 function load() {
+  let text;
+  try { text = fs.readFileSync(DATA_FILE(), "utf8"); } catch { return; } // first run: no file yet
   try {
-    const raw = JSON.parse(fs.readFileSync(DATA_FILE(), "utf8"));
+    const raw = JSON.parse(text);
     data = { ...data, ...raw, settings: { ...DEFAULT_SETTINGS, ...(raw.settings || {}) } };
-  } catch { /* first run */ }
+    if (!Array.isArray(data.reflections)) data.reflections = [];
+  } catch (e) {
+    // The file exists but can't be read: keep a copy before anything new is saved over it.
+    const backup = DATA_FILE().replace(/\.json$/, `-damaged-${Date.now()}.json`);
+    try { fs.copyFileSync(DATA_FILE(), backup); } catch {}
+    console.error("data file unreadable, backed up to", backup, e.message);
+  }
 }
 let saveTimer = null;
 function save() {
@@ -45,15 +54,14 @@ function getApiKey() {
   if (!data.apiKeyEnc) return "";
   try {
     const buf = Buffer.from(data.apiKeyEnc, "base64");
-    return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(buf) : buf.toString("utf8");
+    return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(buf) : "";
   } catch { return ""; }
 }
 function setApiKey(key) {
   key = (key || "").trim();
   if (!key) { data.apiKeyEnc = ""; return; }
-  data.apiKeyEnc = safeStorage.isEncryptionAvailable()
-    ? safeStorage.encryptString(key).toString("base64")
-    : Buffer.from(key, "utf8").toString("base64");
+  if (!safeStorage.isEncryptionAvailable()) throw new Error("encryption_unavailable"); // never store the key in plain text
+  data.apiKeyEnc = safeStorage.encryptString(key).toString("base64");
 }
 
 // ---------------------------------------------------------------- timer
@@ -101,7 +109,7 @@ function finishFocus(early) {
   T.round += 1;
   const session = { kind: "focus", minutes, intent: T.intent, endedAt: Date.now() };
   T.lastNudge = Date.now();
-  notify("Focus round done!", T.intent ? `Nice work on “${T.intent}”. Tell ${petName()} how it went.` : `Time for a break. Tell ${petName()} how it went.`);
+  notify("Focus round done!", `Time for a break. Tell ${petName()} how it went.`); // task text stays out of notifications
   sendPet("event", { type: "focusDone" });
   if (S().autoBreak) startBreak(true);
   else { Object.assign(T, { mode: "idle", running: false }); persistTimer(); }
@@ -340,7 +348,7 @@ const newer = (a, b) => {
   return false;
 };
 async function checkForUpdate() {
-  const url = process.env.FB_UPDATE_URL || (PKG.updateRepo ? `https://api.github.com/repos/${PKG.updateRepo}/releases/latest` : "");
+  const url = (DEV && process.env.FB_UPDATE_URL) || (PKG.updateRepo ? `https://api.github.com/repos/${PKG.updateRepo}/releases/latest` : "");
   if (!url) return;
   try {
     const res = await fetch(url, { headers: { Accept: "application/vnd.github+json", "User-Agent": "FocusBuddy-update-check" } });
@@ -359,7 +367,15 @@ async function checkForUpdate() {
     broadcast();
   } catch (e) { console.error("update check failed", e.message); }
 }
-function openUpdate() { if (update) shell.openExternal(update.url); }
+// Only ever open https links on github.com, whatever the release data says.
+function openSafe(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol === "https:" && u.hostname === "github.com") return shell.openExternal(u.toString());
+  } catch {}
+  console.error("refused to open", url);
+}
+function openUpdate() { if (update) openSafe(update.url); }
 
 function buildTrayMenu() {
   return Menu.buildFromTemplate([
@@ -390,7 +406,7 @@ const handlers = {
   togglePanel, hidePanel, openDashboard,
   openUpdate,
   dismissUpdate: () => { if (update) { data.updateDismissed = update.version; save(); } },
-  openUpdatePage: () => update && shell.openExternal(update.page),
+  openUpdatePage: () => update && openSafe(update.page),
   showPanel: (view) => showPanel(view),
   checkin: () => openReflection({ kind: "checkin", minutes: 60, intent: "" }),
   answer: (text) => handleAnswer(String(text || "")),
@@ -437,12 +453,27 @@ const handlers = {
   petMenu: () => buildTrayMenu().popup({ window: pet }),
 };
 let dragOrigin = null;
-ipcMain.handle("act", async (_e, name, payload) => {
+const RENDERER_DIR = "file://" + path.join(__dirname, "renderer") + "/";
+ipcMain.handle("act", async (e, name, payload) => {
+  const from = e.senderFrame && e.senderFrame.url;
+  if (!from || !decodeURI(from).startsWith(RENDERER_DIR)) throw new Error("not allowed");
+  if (typeof name !== "string" || !Object.hasOwn(handlers, name)) throw new Error("unknown action");
   const fn = handlers[name];
-  if (!fn) throw new Error("unknown action " + name);
   const out = await fn(payload);
   broadcast();
   return out;
+});
+
+// ---------------------------------------------------------------- lock down every window
+app.on("web-contents-created", (_e, wc) => {
+  wc.on("will-navigate", (ev) => ev.preventDefault());
+  wc.on("will-redirect", (ev) => ev.preventDefault());
+  wc.on("will-attach-webview", (ev) => ev.preventDefault());
+  wc.setWindowOpenHandler(() => ({ action: "deny" }));
+});
+app.on("ready", () => {
+  // refuse camera, microphone, location and every other permission request
+  require("electron").session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
 });
 
 // ---------------------------------------------------------------- boot
@@ -467,11 +498,11 @@ app.whenReady().then(() => {
   tray.setContextMenu(buildTrayMenu());
   createPet();
   createPanel();
-  setTimeout(checkForUpdate, process.env.FB_UPDATE_URL ? 800 : 8000);
+  setTimeout(checkForUpdate, DEV && process.env.FB_UPDATE_URL ? 800 : 8000);
   setInterval(checkForUpdate, 6 * 60 * 60 * 1000);
   setInterval(tick, 500);
   broadcast();
-  if (process.env.FB_SNAP) require("./tools/snapflow")({ handlers, showPanel, openReflection, getPanel: () => panel, getPet: () => pet, getDash: () => dash, data, S });
+  if (DEV && process.env.FB_SNAP) require("./tools/snapflow")({ handlers, showPanel, openReflection, getPanel: () => panel, getPet: () => pet, getDash: () => dash, data, S });
 });
 app.on("second-instance", () => { if (pet) pet.showInactive(); });
 app.on("window-all-closed", () => { /* keep running in the menu bar */ });

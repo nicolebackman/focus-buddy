@@ -97,9 +97,13 @@ document.querySelectorAll("input[data-key]").forEach((el) => el.addEventListener
 $("petName").addEventListener("change", () => act("saveSettings", { petName: $("petName").value }));
 async function refresh() { state = await act("getState"); fillSettings(); }
 $("saveKey").onclick = async () => {
-  await act("saveSettings", { apiKey: $("apiKey").value });
-  $("apiKey").value = "";
-  setTimeout(fillSettings, 50);
+  try {
+    await act("saveSettings", { apiKey: $("apiKey").value });
+    $("apiKey").value = "";
+    setTimeout(fillSettings, 50);
+  } catch {
+    $("keyNote").textContent = "This Mac couldn't encrypt the key, so it wasn't saved.";
+  }
 };
 $("backSettings").onclick = () => show("home");
 

@@ -17,6 +17,9 @@ function header() {
   const name = state ? Pets.nameFor(state.settings) : "Your buddy";
   $("greet").textContent = h < 12 ? "Good morning." : h < 18 ? "Good afternoon." : "Good evening.";
   $("reviewTitle").textContent = `${name}'s review`;
+  $("privacyText").textContent = state && state.settings.hasKey
+    ? "Saved on this Mac · answers go to Claude for questions & reviews"
+    : "Your reflections stay on this Mac";
   const today = refl.filter((r) => dayKey(r.at) === dayKey(Date.now()));
   const mins = today.filter((r) => r.kind === "focus").reduce((a, r) => a + r.minutes, 0);
   $("summary").textContent = today.length

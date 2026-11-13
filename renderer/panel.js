@@ -71,6 +71,19 @@ function fillSettings() {
   const s = state.settings;
   $("sFocus").value = s.focus; $("sShort").value = s.short; $("sLong").value = s.long; $("sEvery").value = s.every;
   document.querySelectorAll("input[data-key]").forEach((el) => (el.checked = !!s[el.dataset.key]));
+  const vp = $("volPick"); vp.innerHTML = "";
+  [["off", "Off"], ["soft", "Soft"], ["normal", "Normal"]].forEach(([v, label]) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String(s.volume === v));
+    b.onclick = () => act("saveSettings", { volume: v }).then(() => { if (v !== "off") act("previewChime", v); refresh(); });
+    vp.appendChild(b);
+  });
+  for (const [id, key] of [["qFrom", "quietFrom"], ["qTo", "quietTo"]]) {
+    const sel = $(id);
+    if (!sel.options.length) for (let h = 0; h < 24; h++) sel.add(new Option(String(h).padStart(2, "0") + ":00", h));
+    sel.value = s[key];
+    sel.disabled = !s.quietHours;
+  }
   $("keyNote").textContent = s.hasKey ? "A key is saved and Claude is on. Save an empty field to remove it." : "No key saved. Your buddy uses its own built-in questions.";
   if (document.activeElement !== $("petName")) { $("petName").value = s.petName || ""; $("petName").placeholder = Pets.SPECIES[s.pet].name; }
   const pick = $("petPick"); pick.innerHTML = "";
@@ -94,6 +107,9 @@ function fillSettings() {
   $(id).addEventListener("change", () => act("saveSettings", { [key]: $(id).value }).then(fillSettings));
 });
 document.querySelectorAll("input[data-key]").forEach((el) => el.addEventListener("change", () => act("saveSettings", { [el.dataset.key]: el.checked })));
+$("qFrom").addEventListener("change", () => act("saveSettings", { quietFrom: $("qFrom").value }));
+$("qTo").addEventListener("change", () => act("saveSettings", { quietTo: $("qTo").value }));
+$("tQuiet").addEventListener("change", () => setTimeout(refresh, 50));
 $("petName").addEventListener("change", () => act("saveSettings", { petName: $("petName").value }));
 async function refresh() { state = await act("getState"); fillSettings(); }
 $("saveKey").onclick = async () => {

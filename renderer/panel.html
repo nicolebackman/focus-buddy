@@ -36,6 +36,9 @@
   .foot button:hover { background: var(--sunk); color: var(--ink); }
   .foot svg { width: 18px; height: 18px; }
   /* settings */
+  .f > span { font-weight: 700; font-size: .8rem; color: var(--ink-2); }
+  .f { display: flex; flex-direction: column; gap: 6px; }
+  select { width: 100%; padding: 9px 11px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--paper); font: inherit; color: inherit; }
   label.f { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .8rem; color: var(--ink-2); }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .tog { display: flex; gap: 10px; align-items: flex-start; font-size: .88rem; }
@@ -128,10 +131,15 @@
       <label class="f" for="sEvery">Long break every<input id="sEvery" type="number" min="2" max="8"></label>
     </div>
     <label class="tog" for="tAuto"><input type="checkbox" id="tAuto" data-key="autoBreak"> Start breaks automatically</label>
-    <label class="tog" for="tSound"><input type="checkbox" id="tSound" data-key="sound"> Chime when a timer ends</label>
+    <div class="f"><span>Sound</span><div class="lens" id="volPick" role="group" aria-label="Sound volume"></div></div>
     <div class="eyebrow">Nudges & reflection</div>
     <label class="tog" for="tNotes"><input type="checkbox" id="tNotes" data-key="notes"> Little notes during focus</label>
-    <label class="tog" for="tHourly"><input type="checkbox" id="tHourly" data-key="hourly"> Hourly stretch nudge when no timer is running</label>
+    <label class="tog" for="tHourly"><input type="checkbox" id="tHourly" data-key="hourly"> Hourly stretch nudge after an hour at the computer without a timer</label>
+    <label class="tog" for="tQuiet"><input type="checkbox" id="tQuiet" data-key="quietHours"> Quiet hours: no nudges between</label>
+    <div class="grid2">
+      <label class="f" for="qFrom">From<select id="qFrom"></select></label>
+      <label class="f" for="qTo">Until<select id="qTo"></select></label>
+    </div>
     <label class="tog" for="tFollow"><input type="checkbox" id="tFollow" data-key="followUp"> Ask a follow-up question after I answer</label>
     <label class="tog" for="tLogin"><input type="checkbox" id="tLogin" data-key="openAtLogin"> Open when I log in</label>
     <div class="eyebrow">Smarter buddy (optional)</div>

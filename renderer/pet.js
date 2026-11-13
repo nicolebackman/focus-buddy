@@ -69,16 +69,21 @@ function flashFace(face, ms = 5000) {
 // ---------- sound
 let actx = null;
 function unlockAudio() { try { actx = actx || new AudioContext(); if (actx.state === "suspended") actx.resume(); } catch {} }
-function chime(kind) {
+// A soft marimba-like chime: low-passed sine notes with a gentle attack, at a fraction of full volume.
+function chime(opts) {
+  const { kind = "focus", volume = "soft" } = typeof opts === "string" ? { kind: opts } : opts || {};
+  if (volume === "off") return;
   unlockAudio();
   if (!actx) return;
-  const notes = kind === "break" ? [659.3, 523.3, 392] : kind === "nudge" ? [587.3, 784] : [523.3, 659.3, 784, 1046.5];
+  const peak = volume === "normal" ? 0.12 : 0.045;
+  const notes = kind === "break" ? [523.3, 440, 349.2] : kind === "nudge" ? [440, 587.3] : [392, 493.9, 587.3, 784];
+  const lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1800; lp.connect(actx.destination);
   notes.forEach((f, i) => {
-    const t = actx.currentTime + i * 0.18;
+    const t = actx.currentTime + 0.05 + i * 0.22;
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = "sine"; o.frequency.value = f;
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.2, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 1);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0005, t + 1.1);
+    o.connect(g).connect(lp); o.start(t); o.stop(t + 1.2);
   });
 }
 

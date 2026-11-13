@@ -14,6 +14,7 @@ module.exports = async ({ handlers, showPanel, openReflection, getPanel, getPet,
     await snap(getPet(), "2-pet-focus"); await snap(getPanel(), "3-panel-focus");
     handlers.stopAll(); await wait(300);
     showPanel("settings"); await wait(700); await snap(getPanel(), "4-panel-settings");
+    await getPanel().webContents.executeJavaScript("document.getElementById('settings').scrollTop = 420"); await wait(300); await snap(getPanel(), "4b-panel-settings-sound");
     openReflection({ kind: "focus", minutes: 25, intent: "Draft the project brief" }); await wait(500);
     await handlers.answer("Pretty good! Got the outline done but Slack kept pulling me away."); await wait(300);
     await handlers.rate({ focus: 3, energy: 4 }); await wait(800);

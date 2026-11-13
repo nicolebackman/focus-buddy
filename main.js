@@ -1,6 +1,6 @@
 // Focus Buddy — a little pet that lives on your desktop and keeps your Pomodoro timer.
 // Main process: owns the timer, the windows, and everything saved to disk.
-const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, nativeTheme, Notification, safeStorage, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, nativeTheme, Notification, safeStorage, shell, powerMonitor } = require("electron");
 const PKG = require("./package.json");
 const path = require("path");
 const fs = require("fs");
@@ -15,7 +15,8 @@ if (!app.requestSingleInstanceLock()) app.quit();
 const DATA_FILE = () => path.join(app.getPath("userData"), "pip-data.json");
 const DEFAULT_SETTINGS = {
   focus: 25, short: 5, long: 15, every: 4,
-  autoBreak: true, sound: true, hourly: true, notes: true,
+  autoBreak: true, volume: "soft", hourly: true, notes: true,
+  quietHours: true, quietFrom: 19, quietTo: 8,
   followUp: true, openAtLogin: false, petPos: null,
   pet: "tomato", petColor: "red", petName: "",
 };
@@ -32,6 +33,8 @@ function load() {
     const raw = JSON.parse(text);
     data = { ...data, ...raw, settings: { ...DEFAULT_SETTINGS, ...(raw.settings || {}) } };
     if (!Array.isArray(data.reflections)) data.reflections = [];
+    if (raw.settings && "sound" in raw.settings && !("volume" in raw.settings)) data.settings.volume = raw.settings.sound ? "soft" : "off";
+    delete data.settings.sound;
   } catch (e) {
     // The file exists but can't be read: keep a copy before anything new is saved over it.
     const backup = DATA_FILE().replace(/\.json$/, `-damaged-${Date.now()}.json`);
@@ -104,20 +107,20 @@ function stopAll() {
   petFace("idle");
   persistTimer();
 }
-function finishFocus(early) {
+function finishFocus(early, quiet) {
   const minutes = early ? Math.max(1, Math.round((T.total - remaining()) / 60000)) : Math.round(T.total / 60000);
   T.round += 1;
   const session = { kind: "focus", minutes, intent: T.intent, endedAt: Date.now() };
   T.lastNudge = Date.now();
-  notify("Focus round done!", `Time for a break. Tell ${petName()} how it went.`); // task text stays out of notifications
+  notify("Focus round done!", `Time for a break. Tell ${petName()} how it went.`, quiet); // task text stays out of notifications
   sendPet("event", { type: "focusDone" });
   if (S().autoBreak) startBreak(true);
   else { Object.assign(T, { mode: "idle", running: false }); persistTimer(); }
   petFace("proud");
   openReflection(session);
 }
-function breakDone() {
-  notify("Break's over", "Ready for another focus round?");
+function breakDone(quiet) {
+  notify("Break's over", "Ready for another focus round?", quiet);
   Object.assign(T, { mode: "idle", running: false, lastNudge: Date.now() });
   persistTimer();
   petFace("alert");
@@ -125,13 +128,28 @@ function breakDone() {
   sendPet("event", { type: "breakDone" });
 }
 
+// Nudges only count time you actually spend at the computer.
+const AWAY_MS = 5 * 60000;            // idle this long = you stepped away
+let lastWake = Date.now();
+function inQuietHours(d = new Date()) {
+  const s = S(); if (!s.quietHours) return false;
+  const h = d.getHours(), from = s.quietFrom, to = s.quietTo;
+  return from === to ? false : from < to ? h >= from && h < to : h >= from || h < to;
+}
+function onBackAtComputer() { lastWake = Date.now(); T.lastNudge = Date.now(); persistTimer(); }
+
 function tick() {
+  let idleMs = 0;
+  try { idleMs = powerMonitor.getSystemIdleTime() * 1000; } catch {}
+  if (idleMs > AWAY_MS) T.lastNudge = Date.now();      // away from the keyboard: restart the hourly countdown
   if (T.running && T.endAt <= Date.now()) {
-    if (T.mode === "focus") finishFocus(false); else breakDone();
+    // A timer that ran out while the Mac was asleep (or long ago) finishes without a sound.
+    const quiet = Date.now() - T.endAt > 60000 || Date.now() - lastWake < 60000;
+    if (T.mode === "focus") finishFocus(false, quiet); else breakDone(quiet);
   } else if (T.running && T.mode === "focus" && S().notes && Date.now() - T.lastNote > 10 * 60000 && T.endAt - Date.now() > 60000) {
     T.lastNote = Date.now();
     petSay("mid");
-  } else if (T.mode === "idle" && S().hourly && Date.now() - T.lastNudge > 60 * 60000) {
+  } else if (T.mode === "idle" && S().hourly && Date.now() - T.lastNudge > 60 * 60000 && Date.now() - lastWake > 60000 && !inQuietHours()) {
     T.lastNudge = Date.now();
     persistTimer();
     notify("Hourly stretch", `Stand up, look away from the screen, and check in with ${petName()}.`);
@@ -304,9 +322,9 @@ function openDashboard() {
 function sendPet(ch, payload) { if (pet) pet.webContents.send(ch, payload); }
 function petFace(face) { sendPet("face", face); }
 function petSay(kind) { sendPet("say", kind); }
-function notify(title, body) {
+function notify(title, body, quiet) {
   try { if (Notification.isSupported()) new Notification({ title, body, silent: true }).show(); } catch {}
-  if (S().sound) sendPet("chime", title.startsWith("Hourly") ? "nudge" : title.startsWith("Break") ? "break" : "focus");
+  if (!quiet && S().volume !== "off") sendPet("chime", { kind: title.startsWith("Hourly") ? "nudge" : title.startsWith("Break") ? "break" : "focus", volume: S().volume });
 }
 
 // ---------------------------------------------------------------- state to windows
@@ -405,6 +423,7 @@ const handlers = {
   skipBreak: () => { if (T.mode === "short" || T.mode === "long") { Object.assign(T, { mode: "idle", running: false, lastNudge: Date.now() }); petFace("idle"); persistTimer(); } },
   togglePanel, hidePanel, openDashboard,
   openUpdate,
+  previewChime: (volume) => sendPet("chime", { kind: "nudge", volume: ["soft", "normal"].includes(volume) ? volume : "soft" }),
   dismissUpdate: () => { if (update) { data.updateDismissed = update.version; save(); } },
   openUpdatePage: () => update && openSafe(update.page),
   showPanel: (view) => showPanel(view),
@@ -421,7 +440,10 @@ const handlers = {
     if ("short" in patch) s.short = n(patch.short, 1, 60, s.short);
     if ("long" in patch) s.long = n(patch.long, 1, 90, s.long);
     if ("every" in patch) s.every = n(patch.every, 2, 8, s.every);
-    for (const k of ["autoBreak", "sound", "hourly", "notes", "followUp"]) if (k in patch) s[k] = !!patch[k];
+    for (const k of ["autoBreak", "hourly", "notes", "followUp", "quietHours"]) if (k in patch) s[k] = !!patch[k];
+    if ("volume" in patch && ["off", "soft", "normal"].includes(patch.volume)) s.volume = patch.volume;
+    if ("quietFrom" in patch) s.quietFrom = n(patch.quietFrom, 0, 23, s.quietFrom);
+    if ("quietTo" in patch) s.quietTo = n(patch.quietTo, 0, 23, s.quietTo);
     if ("openAtLogin" in patch) {
       s.openAtLogin = !!patch.openAtLogin;
       try { app.setLoginItemSettings({ openAtLogin: s.openAtLogin }); } catch {}
@@ -498,6 +520,7 @@ app.whenReady().then(() => {
   tray.setContextMenu(buildTrayMenu());
   createPet();
   createPanel();
+  for (const ev of ["resume", "unlock-screen", "user-did-become-active"]) powerMonitor.on(ev, onBackAtComputer);
   setTimeout(checkForUpdate, DEV && process.env.FB_UPDATE_URL ? 800 : 8000);
   setInterval(checkForUpdate, 6 * 60 * 60 * 1000);
   setInterval(tick, 500);

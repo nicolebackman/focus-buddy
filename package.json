@@ -1,13 +1,13 @@
 {
   "name": "pip-focus-buddy",
   "productName": "Focus Buddy",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "A little pet that lives on your desktop, runs your Pomodoro timer and helps you reflect",
   "main": "main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "package": "electron-packager . \"Focus Buddy\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=build/icon.icns --app-bundle-id=local.pip.focusbuddy --ignore=^/dist --ignore=^/build/icon.iconset --ignore=^/tools --ignore=^/release --ignore=^/node_modules/@fontsource-variable",
+    "package": "electron-packager . \"Focus Buddy\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=build/icon.icns --app-bundle-id=local.pip.focusbuddy --ignore=^/dist --ignore=^/build/icon.iconset --ignore=^/tools --ignore=^/docs --ignore=^/release --ignore=^/node_modules/@fontsource-variable",
     "release": "bash tools/release.sh"
   },
   "dependencies": {

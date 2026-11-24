@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Focus Buddy</title>
+<meta name="description" content="A little pet that lives on your Mac desktop, runs your Pomodoro timer, and helps you notice how you work.">
+<link rel="icon" href="img/tray.png">
+<style>
+@font-face { font-family: "Bricolage"; src: url("fonts/bricolage-grotesque-latin-wght-normal.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "Figtree"; src: url("fonts/figtree-latin-wght-normal.woff2") format("woff2"); font-weight: 300 900; font-display: swap; }
+:root {
+  --paper: #FAF7F2; --card: #FFFFFF; --sunk: #F1ECE4; --ink: #1D1916; --ink-2: #4A433D; --muted: #7A7169; --line: #E7E0D6;
+  --red: #EA3A1F; --violet: #6C4CF1; --lime: #CFEF55; --pink: #F68BD3; --sky: #74B6FF;
+  --glow-a: #FCE3F3; --glow-b: #E9E2FF;
+  --display: "Bricolage", ui-rounded, system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #16141A; --card: #201D25; --sunk: #2A2630; --ink: #F5F1EA; --ink-2: #D6D0C8; --muted: #9C948C; --line: #36313C; --glow-a: #3A2236; --glow-b: #2E2750; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-inline: max(20px, env(safe-area-inset-left)) max(20px, env(safe-area-inset-right)); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: -0.02em; }
+h2 { font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 800; }
+h3 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+p { margin: 0; color: var(--ink-2); }
+a { color: var(--violet); }
+code { font: 0.88em ui-monospace, "SF Mono", Menlo, monospace; background: var(--sunk); padding: 0.15em 0.4em; border-radius: 6px; overflow-wrap: anywhere; }
+.btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 700 1rem/1 var(--body); border-radius: 999px; padding: 16px 24px; }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.ghost { box-shadow: inset 0 0 0 1.5px var(--line); color: var(--ink); }
+.btn:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; }
+.eyebrow { font: 700 0.78rem/1 var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); }
+section { padding-block: 72px; }
+.head { display: flex; flex-direction: column; gap: 14px; max-width: 640px; margin-bottom: 40px; }
+
+/* top bar */
+.bar { display: flex; align-items: center; justify-content: space-between; padding-block: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 1.15rem/1 var(--display); color: var(--ink); text-decoration: none; }
+.brand img { width: 34px; height: 34px; }
+.bar nav { display: flex; gap: 22px; }
+.bar nav a { color: var(--ink-2); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+@media (max-width: 640px) { .bar nav { display: none; } }
+
+/* hero */
+.hero { padding-block: 48px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 22px; position: relative; }
+.hero::before { content: ""; position: absolute; inset: 0 10% 30%; background: radial-gradient(closest-side, var(--glow-a), transparent), radial-gradient(closest-side at 70% 40%, var(--glow-b), transparent); filter: blur(30px); z-index: -1; }
+.hero h1 { font-size: clamp(3rem, 9vw, 6.2rem); font-weight: 800; letter-spacing: -0.035em; }
+.hero h1 em { font-style: normal; color: var(--red); }
+.hero p.lede { font-size: clamp(1.1rem, 2.2vw, 1.3rem); max-width: 34em; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.small { font-size: 0.88rem; color: var(--muted); }
+.family { width: 100%; max-width: 900px; height: auto; margin-top: 18px; }
+@media (prefers-reduced-motion: no-preference) { .family { animation: bob 3.4s ease-in-out infinite; } }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+
+/* features */
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.feat { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.dot { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font: 800 1.1rem/1 var(--display); color: #1D1916; }
+.feat .new { align-self: flex-start; font: 800 0.7rem/1 var(--body); letter-spacing: 0.08em; text-transform: uppercase; background: var(--lime); color: #1D1916; padding: 5px 9px; border-radius: 999px; }
+@media (max-width: 860px) { .features { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
+
+/* tour */
+.tour { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: start; }
+.shot { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.shot img { width: 100%; height: auto; border-radius: 26px; box-shadow: 0 1px 1px rgba(29,25,22,.04), 0 12px 32px rgba(29,25,22,.12); }
+.shot p { font-size: 0.95rem; }
+.wide { margin-top: 28px; }
+.wide img { border-radius: 18px; }
+@media (max-width: 760px) { .tour { grid-template-columns: 1fr; max-width: 360px; margin-inline: auto; } }
+
+/* sounds */
+.sounds { display: flex; flex-wrap: wrap; gap: 10px; }
+.sound { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; font-weight: 700; }
+.sound i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+/* install */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; counter-reset: s; }
+.steps li { counter-increment: s; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 24px 24px 24px 74px; position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.steps li::before { content: counter(s); position: absolute; left: 22px; top: 22px; width: 36px; height: 36px; border-radius: 50%; background: var(--red); color: #fff; font: 800 1rem/36px var(--display); text-align: center; }
+.steps pre { margin: 4px 0 0; background: var(--ink); color: var(--paper); border-radius: 12px; padding: 12px 14px; overflow-x: auto; font: 0.85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+@media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
+.note { margin-top: 18px; background: var(--sunk); border-radius: 16px; padding: 16px 20px; font-size: 0.95rem; }
+
+/* privacy */
+.privacy { background: var(--ink); color: var(--paper); border-radius: 32px; padding: clamp(28px, 5vw, 56px); display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.privacy p, .privacy li { color: color-mix(in srgb, var(--paper) 80%, transparent); }
+.privacy h2 { color: var(--paper); }
+.privacy ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 10px; }
+.privacy code { background: color-mix(in srgb, var(--paper) 14%, transparent); color: var(--paper); }
+@media (max-width: 760px) { .privacy { grid-template-columns: 1fr; } }
+
+/* faq */
+details { border-bottom: 1px solid var(--line); padding-block: 18px; }
+summary { cursor: pointer; font: 700 1.1rem/1.3 var(--display); list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::after { content: "+"; color: var(--red); font-size: 1.4rem; line-height: 1; }
+details[open] summary::after { content: "–"; }
+details p { margin-top: 10px; max-width: 64ch; }
+footer { padding-block: 40px 60px; color: var(--muted); font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="#"><img src="img/tray.png" alt="">Focus Buddy</a>
+    <nav><a href="#features">Features</a><a href="#tour">Tour</a><a href="#install">Install</a><a href="#privacy">Privacy</a><a href="#faq">FAQ</a></nav>
+  </header>
+
+  <section class="hero">
+    <span class="eyebrow">Free for Mac · Version 1.2</span>
+    <h1>A tiny friend for<br>your <em>focus time</em>.</h1>
+    <p class="lede">Focus Buddy is a little pet that lives on your desktop. It runs your Pomodoro timer, reminds you to take breaks, and after each round asks how it went, so you slowly learn how you work best.</p>
+    <div class="ctas">
+      <a class="btn primary" href="https://github.com/nicolebackman/focus-buddy/releases/latest">Download for Mac</a>
+      <a class="btn ghost" href="#install">How to install</a>
+    </div>
+    <span class="small">For Macs with Apple chips (M1 or newer)</span>
+    <img class="family" src="img/family.png" width="1000" height="220" alt="The five buddies: a red tomato, a violet pup, a lime cat, a pink bunny and a blue bear">
+  </section>
+
+  <section id="features">
+    <div class="head">
+      <span class="eyebrow">What it does</span>
+      <h2>Small nudges, kept gentle.</h2>
+    </div>
+    <div class="features">
+      <div class="feat"><span class="dot" style="background:var(--red)">25</span><h3>A Pomodoro timer that sits with you</h3><p>25 minutes of focus, 5 minute breaks, a longer break every fourth round. All adjustable. The countdown also shows in your menu bar, next to a tiny tomato.</p></div>
+      <div class="feat"><span class="dot" style="background:var(--pink)">?</span><h3>A quick check-in after each round</h3><p>Your buddy asks how it went and how focused and energized you felt. It takes ten seconds, and over time it shows you real patterns.</p></div>
+      <div class="feat"><span class="dot" style="background:var(--sky)">↗</span><h3>A dashboard of your week</h3><p>Focus minutes per day, how you've felt while working, and every reflection you've written, all in one place.</p></div>
+      <div class="feat"><span class="new">New in 1.2</span><h3>Pick your time's-up sound</h3><p>Keep the soft standard chime, or let your buddy tell you itself: a tomato pop, a puppy woof, a cat meow, a bunny squeak or a little bear roar.</p></div>
+      <div class="feat"><span class="dot" style="background:var(--lime)">↑</span><h3>Stretch reminders that know you're away</h3><p>Once an hour without a timer, your buddy suggests a stretch. It doesn't count time you're away from the computer, and it stays quiet in the evenings.</p></div>
+      <div class="feat"><span class="dot" style="background:var(--violet);color:#fff">✦</span><h3>Smarter questions, if you want them</h3><p>Add your own Anthropic API key and Claude writes thoughtful follow-up questions and a weekly-style review of your patterns. Completely optional.</p></div>
+    </div>
+  </section>
+
+  <section id="tour">
+    <div class="head">
+      <span class="eyebrow">A quick tour</span>
+      <h2>Tap your buddy and everything is right there.</h2>
+    </div>
+    <div class="tour">
+      <div class="shot"><img src="img/panel-timer.png" width="330" height="500" alt="The timer panel showing a focus round in progress"><p><b>Start a round.</b> Type what you're working on, or just hit start. Pause, stop or finish early any time.</p></div>
+      <div class="shot"><img src="img/panel-chat.png" width="330" height="500" alt="The check-in chat after a focus round"><p><b>Say how it went.</b> A couple of sentences and two taps. Skip whenever you like.</p></div>
+      <div class="shot"><img src="img/panel-sounds.png" width="330" height="500" alt="Settings showing volume and the new time's-up sound choices"><p><b>Make it yours.</b> Pick your buddy, its color and name, round lengths, quiet hours and sounds.</p></div>
+    </div>
+    <div class="shot wide"><img src="img/dashboard.png" width="1400" height="1023" alt="The dashboard with today's focus minutes, rounds and ratings, and charts for the last week"><p><b>See the bigger picture.</b> Open the dashboard from the menu to look back over your week.</p></div>
+  </section>
+
+  <section id="sounds">
+    <div class="head">
+      <span class="eyebrow">New in 1.2</span>
+      <h2>Every buddy has its own voice.</h2>
+      <p>Choose a sound in Settings under "When time is up". Pick <b>My buddy</b> and the sound follows whichever pet you have. Hourly stretch nudges always use the gentle chime.</p>
+    </div>
+    <div class="sounds">
+      <span class="sound"><i style="background:var(--muted)"></i>Chime</span>
+      <span class="sound"><i style="background:var(--red)"></i>Tomato pop</span>
+      <span class="sound"><i style="background:var(--violet)"></i>Pup woof</span>
+      <span class="sound"><i style="background:var(--lime)"></i>Cat meow</span>
+      <span class="sound"><i style="background:var(--pink)"></i>Bunny squeak</span>
+      <span class="sound"><i style="background:var(--sky)"></i>Bear roar</span>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="head">
+      <span class="eyebrow">Install</span>
+      <h2>Up and running in a minute.</h2>
+    </div>
+    <ol class="steps">
+      <li><h3>Download</h3><p>Get the latest <code>.zip</code> from the <a href="https://github.com/nicolebackman/focus-buddy/releases/latest">releases page</a> and double-click it to unzip.</p></li>
+      <li><h3>Move it to Applications</h3><p>Drag <b>Focus Buddy</b> into your Applications folder.</p></li>
+      <li><h3>Let your Mac open it</h3><p>Focus Buddy isn't signed with a paid Apple developer certificate, so macOS may say it's "damaged". It isn't. Open the Terminal app, paste this line and press Return:</p><pre>xattr -cr "/Applications/Focus Buddy.app"</pre></li>
+      <li><h3>Say hi</h3><p>Open Focus Buddy. Your buddy appears in the bottom-right corner and a tomato shows up in your menu bar. Tap the buddy to start.</p></li>
+    </ol>
+    <p class="note">When a new version is out, your buddy tells you and the menu bar menu gets a "Download update" item. Your settings and reflections stay put when you install the new version.</p>
+  </section>
+
+  <section id="privacy">
+    <div class="privacy">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <span class="eyebrow" style="color:var(--lime)">Privacy</span>
+        <h2>Your reflections stay on your Mac.</h2>
+        <p>There's no account, no tracking and no server. Everything you write to your buddy is saved in a file on your own computer.</p>
+      </div>
+      <ul>
+        <li>Saved in <code>~/Library/Application Support/Focus Buddy/</code>, only for your Mac user.</li>
+        <li>If you add an Anthropic API key, it's encrypted with your Mac's Keychain.</li>
+        <li>With a key saved, your answers and recent reflections are sent to Anthropic only to write follow-up questions and insights.</li>
+        <li>Without a key, nothing you write ever leaves your computer.</li>
+        <li>The only other request is a check for new versions on GitHub.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="head"><span class="eyebrow">Questions</span><h2>Good to know</h2></div>
+    <details><summary>Does it work on Intel Macs?</summary><p>Not yet. The current build is for Macs with Apple chips (M1, M2, M3 and newer).</p></details>
+    <details><summary>Where can I see everything I've written?</summary><p>Right-click your buddy (or click the tomato in the menu bar) and choose <b>Open dashboard</b>. Every check-in is listed there with the full conversation, and you can delete any of them.</p></details>
+    <details><summary>Do I need an API key?</summary><p>No. Without one, your buddy uses its own built-in questions. A key from <a href="https://console.anthropic.com/">console.anthropic.com</a> lets Claude ask more personal follow-ups and write insights. Usage is billed to your Anthropic account.</p></details>
+    <details><summary>My buddy wandered off screen.</summary><p>Click the tomato in the menu bar and choose <b>Move buddy back to the corner</b>.</p></details>
+    <details><summary>How do I remove all my data?</summary><p>Quit Focus Buddy, then delete the folder <code>~/Library/Application Support/Focus Buddy</code>. Deleting the app alone keeps your data.</p></details>
+    <details><summary>How do I quit it?</summary><p>Click the tomato in the menu bar and choose <b>Quit Focus Buddy</b>.</p></details>
+  </section>
+
+  <footer>
+    <span>Focus Buddy · made with care</span>
+    <a href="https://github.com/nicolebackman/focus-buddy">Source on GitHub</a>
+  </footer>
+</div>
+</body>
+</html>

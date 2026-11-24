@@ -27,6 +27,7 @@
   .updbar div { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: .78rem; color: var(--ink-2); line-height: 1.3; }
   .updbar b { font-family: var(--display); font-size: .92rem; color: var(--ink); }
   .lens { display: flex; gap: 6px; flex-wrap: wrap; }
+  .keyok { flex: 1; font-weight: 700; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .grow { flex: 1; }
   .working { color: var(--ink-2); font-size: .92rem; margin: 0; }
@@ -131,7 +132,8 @@
       <label class="f" for="sEvery">Long break every<input id="sEvery" type="number" min="2" max="8"></label>
     </div>
     <label class="tog" for="tAuto"><input type="checkbox" id="tAuto" data-key="autoBreak"> Start breaks automatically</label>
-    <div class="f"><span>Sound</span><div class="lens" id="volPick" role="group" aria-label="Sound volume"></div></div>
+    <div class="f"><span>Volume</span><div class="lens" id="volPick" role="group" aria-label="Sound volume"></div></div>
+    <div class="f"><span>When time is up</span><div class="lens" id="alarmPick" role="group" aria-label="Time's up sound"></div></div>
     <div class="eyebrow">Nudges & reflection</div>
     <label class="tog" for="tNotes"><input type="checkbox" id="tNotes" data-key="notes"> Little notes during focus</label>
     <label class="tog" for="tHourly"><input type="checkbox" id="tHourly" data-key="hourly"> Hourly stretch nudge after an hour at the computer without a timer</label>
@@ -144,7 +146,11 @@
     <label class="tog" for="tLogin"><input type="checkbox" id="tLogin" data-key="openAtLogin"> Open when I log in</label>
     <div class="eyebrow">Smarter buddy (optional)</div>
     <p class="note">Add your Anthropic API key and your buddy uses Claude to ask follow-up questions and review your patterns. While a key is saved, your answers and recent reflections are sent to Anthropic to write those. The key itself is stored encrypted in your Mac's Keychain.</p>
-    <div class="row">
+    <div class="row" id="keySaved" hidden>
+      <span class="keyok">✓ Key saved, Claude is on</span>
+      <button class="btn small" id="removeKey">Remove key</button>
+    </div>
+    <div class="row" id="keyRow">
       <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" style="flex:1; min-width:0">
       <button class="btn small accent" id="saveKey">Save</button>
     </div>
@@ -168,6 +174,7 @@
   </nav>
 </div>
 <script src="pets.js"></script>
+<script src="sounds.js"></script>
 <script src="panel.js"></script>
 </body>
 </html>

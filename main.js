@@ -17,11 +17,12 @@ const DEFAULT_SETTINGS = {
   focus: 25, short: 5, long: 15, every: 4,
   autoBreak: true, volume: "soft", hourly: true, notes: true,
   quietHours: true, quietFrom: 19, quietTo: 8,
-  followUp: true, openAtLogin: false, petPos: null,
+  followUp: true, openAtLogin: false, petPos: null, alarm: "chime",
   pet: "tomato", petColor: "red", petName: "",
 };
 const SPECIES = { tomato: ["Pip", "tomato"], dog: ["Bo", "pup"], cat: ["Miso", "cat"], bunny: ["Hops", "bunny"], bear: ["Nori", "bear"] };
 const COLORS = ["red", "violet", "chartreuse", "pink", "sky"];
+const ALARMS = ["chime", "buddy", "pop", "woof", "meow", "squeak", "roar"];
 const petName = () => (S().petName || "").trim() || (SPECIES[S().pet] || SPECIES.tomato)[0];
 const persona = () => ({ name: petName(), species: (SPECIES[S().pet] || SPECIES.tomato)[1] });
 let data = { settings: { ...DEFAULT_SETTINGS }, reflections: [], timer: null, apiKeyEnc: "", insight: null };
@@ -324,7 +325,7 @@ function petFace(face) { sendPet("face", face); }
 function petSay(kind) { sendPet("say", kind); }
 function notify(title, body, quiet) {
   try { if (Notification.isSupported()) new Notification({ title, body, silent: true }).show(); } catch {}
-  if (!quiet && S().volume !== "off") sendPet("chime", { kind: title.startsWith("Hourly") ? "nudge" : title.startsWith("Break") ? "break" : "focus", volume: S().volume });
+  if (!quiet && S().volume !== "off") sendPet("chime", { kind: title.startsWith("Hourly") ? "nudge" : title.startsWith("Break") ? "break" : "focus", volume: S().volume, alarm: S().alarm, species: S().pet });
 }
 
 // ---------------------------------------------------------------- state to windows
@@ -423,7 +424,15 @@ const handlers = {
   skipBreak: () => { if (T.mode === "short" || T.mode === "long") { Object.assign(T, { mode: "idle", running: false, lastNudge: Date.now() }); petFace("idle"); persistTimer(); } },
   togglePanel, hidePanel, openDashboard,
   openUpdate,
-  previewChime: (volume) => sendPet("chime", { kind: "nudge", volume: ["soft", "normal"].includes(volume) ? volume : "soft" }),
+  previewChime: (p) => {
+    const o = typeof p === "string" ? { volume: p } : p || {};
+    sendPet("chime", {
+      kind: o.alarm ? "focus" : "nudge",
+      volume: ["soft", "normal"].includes(o.volume) ? o.volume : S().volume === "normal" ? "normal" : "soft",
+      alarm: ALARMS.includes(o.alarm) ? o.alarm : S().alarm,
+      species: S().pet,
+    });
+  },
   dismissUpdate: () => { if (update) { data.updateDismissed = update.version; save(); } },
   openUpdatePage: () => update && openSafe(update.page),
   showPanel: (view) => showPanel(view),
@@ -442,6 +451,7 @@ const handlers = {
     if ("every" in patch) s.every = n(patch.every, 2, 8, s.every);
     for (const k of ["autoBreak", "hourly", "notes", "followUp", "quietHours"]) if (k in patch) s[k] = !!patch[k];
     if ("volume" in patch && ["off", "soft", "normal"].includes(patch.volume)) s.volume = patch.volume;
+    if ("alarm" in patch && ALARMS.includes(patch.alarm)) s.alarm = patch.alarm;
     if ("quietFrom" in patch) s.quietFrom = n(patch.quietFrom, 0, 23, s.quietFrom);
     if ("quietTo" in patch) s.quietTo = n(patch.quietTo, 0, 23, s.quietTo);
     if ("openAtLogin" in patch) {
@@ -515,7 +525,7 @@ app.whenReady().then(() => {
   if (lastAt && new Date(lastAt).toDateString() !== new Date().toDateString() && T.mode === "idle") T.round = 0;
 
   if (app.dock) app.dock.hide();
-  const trayIcon = nativeImage.createFromPath(path.join(__dirname, "build", "trayTemplate.png"));
+  const trayIcon = nativeImage.createFromPath(path.join(__dirname, "build", "tray.png"));
   tray = new Tray(trayIcon.isEmpty() ? nativeImage.createEmpty() : trayIcon);
   tray.setContextMenu(buildTrayMenu());
   createPet();

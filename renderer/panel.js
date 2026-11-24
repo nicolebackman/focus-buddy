@@ -78,13 +78,23 @@ function fillSettings() {
     b.onclick = () => act("saveSettings", { volume: v }).then(() => { if (v !== "off") act("previewChime", v); refresh(); });
     vp.appendChild(b);
   });
+  const ap = $("alarmPick"); ap.innerHTML = "";
+  Object.entries(Sounds.ALARMS).forEach(([v, { label }]) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String((s.alarm || "chime") === v));
+    if (v === "buddy") b.title = "Plays the sound of whichever buddy you have";
+    b.onclick = () => act("saveSettings", { alarm: v }).then(() => { act("previewChime", { alarm: v }); refresh(); });
+    ap.appendChild(b);
+  });
   for (const [id, key] of [["qFrom", "quietFrom"], ["qTo", "quietTo"]]) {
     const sel = $(id);
     if (!sel.options.length) for (let h = 0; h < 24; h++) sel.add(new Option(String(h).padStart(2, "0") + ":00", h));
     sel.value = s[key];
     sel.disabled = !s.quietHours;
   }
-  $("keyNote").textContent = s.hasKey ? "A key is saved and Claude is on. Save an empty field to remove it." : "No key saved. Your buddy uses its own built-in questions.";
+  $("keySaved").hidden = !s.hasKey;
+  $("keyRow").hidden = s.hasKey;
+  $("keyNote").textContent = s.hasKey ? "For safety the key itself is never shown. Remove it to paste a new one." : "No key saved. Your buddy uses its own built-in questions.";
   if (document.activeElement !== $("petName")) { $("petName").value = s.petName || ""; $("petName").placeholder = Pets.SPECIES[s.pet].name; }
   const pick = $("petPick"); pick.innerHTML = "";
   Object.entries(Pets.SPECIES).forEach(([id, sp]) => {
@@ -121,6 +131,7 @@ $("saveKey").onclick = async () => {
     $("keyNote").textContent = "This Mac couldn't encrypt the key, so it wasn't saved.";
   }
 };
+$("removeKey").onclick = () => act("saveSettings", { apiKey: "" }).then(refresh);
 $("backSettings").onclick = () => show("home");
 
 // ---------------- chat

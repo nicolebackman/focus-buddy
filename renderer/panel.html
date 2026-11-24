@@ -145,13 +145,13 @@
     <label class="tog" for="tFollow"><input type="checkbox" id="tFollow" data-key="followUp"> Ask a follow-up question after I answer</label>
     <label class="tog" for="tLogin"><input type="checkbox" id="tLogin" data-key="openAtLogin"> Open when I log in</label>
     <div class="eyebrow">Smarter buddy (optional)</div>
-    <p class="note">Your reflections stay on this Mac. Add your own AI key (Claude, ChatGPT or Gemini) and your buddy asks follow-up questions and spots your patterns. Your reflections are then sent only to your AI, never to anyone else. The key is encrypted in your Keychain.</p>
+    <p class="note">Your reflections stay on this Mac. Add your own AI key and your buddy asks follow-up questions and spots your patterns. Your reflections are then sent only to your AI, never to anyone else. The key is encrypted in your Keychain.</p>
     <div class="row" id="keySaved" hidden>
       <span class="keyok" id="keyOk">✓ Key saved</span>
       <button class="btn small" id="removeKey">Remove key</button>
     </div>
     <div class="row" id="keyRow">
-      <input type="password" id="apiKey" placeholder="Paste a Claude, ChatGPT or Gemini key" autocomplete="off" style="flex:1; min-width:0">
+      <input type="password" id="apiKey" placeholder="Paste your AI key" autocomplete="off" style="flex:1; min-width:0">
       <button class="btn small accent" id="saveKey">Save</button>
     </div>
     <p class="note" id="keyNote"></p>

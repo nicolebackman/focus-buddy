@@ -129,7 +129,7 @@ $("saveKey").onclick = async () => {
     setTimeout(fillSettings, 50);
   } catch (e) {
     $("keyNote").textContent = /unknown_key/.test(String(e && e.message))
-      ? "That doesn't look like a Claude, ChatGPT or Gemini key. Check you copied all of it."
+      ? "Your buddy doesn't recognize that key. Check you copied all of it."
       : "This Mac couldn't encrypt the key, so it wasn't saved.";
   }
 };

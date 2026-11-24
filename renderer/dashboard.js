@@ -134,7 +134,7 @@ function renderReview() {
   }
   const hasKey = state && state.settings.hasKey;
   $("askBtn").hidden = !hasKey;
-  $("askNote").textContent = hasKey ? "" : "Add your own AI key (Claude, ChatGPT or Gemini) in Settings and your buddy can write a fuller review from your own words.";
+  $("askNote").textContent = hasKey ? "" : "Add your own AI key in Settings and your buddy can write a fuller review from your own words.";
 }
 $("askBtn").onclick = async () => {
   $("askBtn").disabled = true; $("askNote").textContent = "Reading your reflections…";

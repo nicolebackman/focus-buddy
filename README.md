@@ -19,7 +19,7 @@
 - **A dashboard of your week.** Focus minutes, how you've felt while working, and every reflection you've written.
 - **Your own time's-up sound** *(new in 1.2)*. The standard chime, or your buddy's own voice: tomato pop, pup woof, cat meow, bunny squeak or bear roar.
 - **Stretch reminders** once an hour without a timer. Time away from the computer doesn't count, and quiet hours keep the evenings calm.
-- **Optional smarter questions.** Add your own AI key (Claude, ChatGPT or Gemini) and your buddy asks follow-up questions and reviews your patterns.
+- **Optional smarter questions.** Add your own AI key and your buddy asks follow-up questions and reviews your patterns.
 
 <p align="center">
   <img src="docs/img/panel-timer.png" width="250" alt="Timer panel">

@@ -64,9 +64,12 @@ function getApiKey() {
 }
 function setApiKey(key) {
   key = (key || "").trim();
-  if (!key) { data.apiKeyEnc = ""; return; }
+  if (!key) { data.apiKeyEnc = ""; data.aiProvider = ""; return; }
+  const provider = ai.detectProvider(key);
+  if (!provider) throw new Error("unknown_key"); // not a Claude, ChatGPT or Gemini key
   if (!safeStorage.isEncryptionAvailable()) throw new Error("encryption_unavailable"); // never store the key in plain text
   data.apiKeyEnc = safeStorage.encryptString(key).toString("base64");
+  data.aiProvider = provider; // which AI, not the key itself
 }
 
 // ---------------------------------------------------------------- timer
@@ -336,7 +339,7 @@ function publicState() {
   return {
     now: Date.now(),
     timer: { ...T, remainingMs: T.mode === "idle" ? S().focus * 60000 : remaining() },
-    settings: { ...settings, hasKey: !!data.apiKeyEnc },
+    settings: { ...settings, hasKey: !!data.apiKeyEnc, aiName: data.apiKeyEnc ? (ai.PROVIDERS[data.aiProvider] || ai.PROVIDERS.claude).name : "" },
     reflect: reflectSession,
     version: app.getVersion(),
     update: update && data.updateDismissed !== update.version ? update : null,
@@ -512,6 +515,7 @@ app.on("ready", () => {
 // ---------------------------------------------------------------- boot
 app.whenReady().then(() => {
   load();
+  if (data.apiKeyEnc && !data.aiProvider) { data.aiProvider = ai.detectProvider(getApiKey()) || "claude"; save(); } // keys saved before 1.2
   if (data.timer) {
     T = { ...T, ...data.timer };
     if (T.running && T.endAt <= Date.now()) {

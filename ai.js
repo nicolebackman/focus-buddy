@@ -1,30 +1,93 @@
-// Talking to Claude: the buddy's follow-up questions and the dashboard insights.
-// Only used when the user has added their own Anthropic API key in Settings.
+// Talking to the user's own AI: the buddy's follow-up questions and the dashboard insights.
+// Only used when the user has added their own AI key in Settings. The kind of key decides where
+// requests go: Claude (Anthropic), ChatGPT (OpenAI) or Gemini (Google). Nothing is sent anywhere else.
 const Anthropic = require("@anthropic-ai/sdk").default;
 
-const MODEL = "claude-opus-5-5";
 const persona = (p) => `You are ${p.name}, a small, warm, gently playful cartoon ${p.species} who lives on the user's desktop as their focus and work-wellbeing buddy. ` +
   "You speak simply and kindly, like a supportive friend. Never lecture, never diagnose, no medical claims.";
 
+const PROVIDERS = {
+  claude:  { name: "Claude" },
+  chatgpt: { name: "ChatGPT" },
+  gemini:  { name: "Gemini" },
+};
+// Which AI a key belongs to, from its prefix. Returns null for a key we don't recognize.
+function detectProvider(key) {
+  key = String(key || "").trim();
+  if (/^sk-ant-/.test(key)) return "claude";
+  if (/^sk-/.test(key)) return "chatgpt";
+  if (/^AIza/.test(key)) return "gemini";
+  return null;
+}
+
+// For ChatGPT and Gemini, try each model in order and remember the first that works, so the app
+// keeps working as the providers rename and retire models. The "latest" aliases follow their newest model.
+const MODELS = {
+  claude: ["claude-opus-5-5"],
+  chatgpt: ["gpt-6.2-sol", "chat-latest"],
+  gemini: ["gemini-flash-latest", "gemini-3.8-flash"],
+};
+const working = {};
+const TIMEOUT = 60_000;
+
 let cached = { key: "", client: null };
-function client(key) {
-  if (cached.key !== key) cached = { key, client: new Anthropic({ apiKey: key, timeout: 60_000, maxRetries: 1 }) };
+function claudeClient(key) {
+  if (cached.key !== key) cached = { key, client: new Anthropic({ apiKey: key, timeout: TIMEOUT, maxRetries: 1 }) };
   return cached.client;
 }
 
-async function ask(key, { system, user, maxTokens, effort }) {
-  const res = await client(key).beta.messages.create({
-    model: MODEL,
-    max_tokens: maxTokens,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort },
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  if (res.stop_reason === "refusal") return null;
-  const text = res.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
-  return text || null;
+async function post(url, headers, body) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body), signal: AbortSignal.timeout(TIMEOUT) });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error((json.error && json.error.message) || `HTTP ${res.status}`); e.status = res.status; throw e; }
+  return json;
+}
+
+const CALL = {
+  async claude(key, model, { system, user, maxTokens, effort }) {
+    const res = await claudeClient(key).beta.messages.create({
+      model, max_tokens: maxTokens,
+      betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
+      output_config: { effort },
+      system, messages: [{ role: "user", content: user }],
+    });
+    if (res.stop_reason === "refusal") return null;
+    return res.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+  },
+  async chatgpt(key, model, { system, user, maxTokens }) {
+    const res = await post("https://api.openai.com/v1/chat/completions", { Authorization: `Bearer ${key}` }, {
+      model, max_completion_tokens: maxTokens,
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+    });
+    return (res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content) || "";
+  },
+  async gemini(key, model, { system, user, maxTokens }) {
+    const res = await post(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, { "x-goog-api-key": key }, {
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: user }] }],
+      generationConfig: { maxOutputTokens: maxTokens },
+    });
+    const c = res.candidates && res.candidates[0];
+    return ((c && c.content && c.content.parts) || []).map((p) => p.text || "").join("");
+  },
+};
+
+async function ask(key, opts) {
+  const provider = detectProvider(key);
+  if (!provider) throw new Error("unknown_key");
+  const models = working[provider] ? [working[provider]] : MODELS[provider];
+  let lastErr;
+  for (const model of models) {
+    try {
+      const text = await CALL[provider](key, model, opts);
+      working[provider] = model;
+      return (text || "").trim() || null;
+    } catch (e) {
+      lastErr = e;
+      if (e.status !== 404 && e.status !== 400) throw e; // only a missing model is worth trying the next one
+    }
+  }
+  throw lastErr;
 }
 
 // One short follow-up question after the user answers Pip's reflection question.
@@ -55,4 +118,4 @@ async function insight(key, who, reflections) {
   return text || "Your buddy couldn't put together insights this time. Try again later.";
 }
 
-module.exports = { followUp, insight };
+module.exports = { followUp, insight, detectProvider, PROVIDERS };

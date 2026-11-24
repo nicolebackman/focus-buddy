@@ -92,6 +92,7 @@ function fillSettings() {
     sel.disabled = !s.quietHours;
   }
   $("keySaved").hidden = !s.hasKey;
+  $("keyOk").textContent = `✓ ${s.aiName || "AI"} key saved`;
   $("keyRow").hidden = s.hasKey;
   $("keyNote").textContent = s.hasKey ? "For safety the key itself is never shown. Remove it to paste a new one." : "No key saved. Your buddy uses its own built-in questions.";
   if (document.activeElement !== $("petName")) { $("petName").value = s.petName || ""; $("petName").placeholder = Pets.SPECIES[s.pet].name; }
@@ -126,8 +127,10 @@ $("saveKey").onclick = async () => {
     await act("saveSettings", { apiKey: $("apiKey").value });
     $("apiKey").value = "";
     setTimeout(fillSettings, 50);
-  } catch {
-    $("keyNote").textContent = "This Mac couldn't encrypt the key, so it wasn't saved.";
+  } catch (e) {
+    $("keyNote").textContent = /unknown_key/.test(String(e && e.message))
+      ? "That doesn't look like a Claude, ChatGPT or Gemini key. Check you copied all of it."
+      : "This Mac couldn't encrypt the key, so it wasn't saved.";
   }
 };
 $("removeKey").onclick = () => act("saveSettings", { apiKey: "" }).then(refresh);

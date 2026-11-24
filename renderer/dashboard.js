@@ -18,7 +18,7 @@ function header() {
   $("greet").textContent = h < 12 ? "Good morning." : h < 18 ? "Good afternoon." : "Good evening.";
   $("reviewTitle").textContent = `${name}'s review`;
   $("privacyText").textContent = state && state.settings.hasKey
-    ? "Saved on this Mac · answers go to Claude for questions & reviews"
+    ? `Saved on this Mac · answers go only to your ${state.settings.aiName || "AI"}`
     : "Your reflections stay on this Mac";
   const today = refl.filter((r) => dayKey(r.at) === dayKey(Date.now()));
   const mins = today.filter((r) => r.kind === "focus").reduce((a, r) => a + r.minutes, 0);
@@ -128,18 +128,18 @@ function renderReview() {
   if (insight && insight.text) {
     const labels = ["What's going well", "Patterns I noticed", "How you seem to be feeling", "Try this next"];
     const html = esc(insight.text).split("\n").map((line) => (labels.includes(line.trim()) ? `<span class="lab">${line.trim()}</span>` : line)).join("\n");
-    box.innerHTML = `<div class="review-body">${html}</div><p class="sub" style="margin:6px 0 0">Written with Claude on ${new Date(insight.at).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</p>`;
+    box.innerHTML = `<div class="review-body">${html}</div><p class="sub" style="margin:6px 0 0">Written with ${(state && state.settings.aiName) || "your AI"} on ${new Date(insight.at).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</p>`;
   } else {
     box.innerHTML = `<ul class="obs">${observations().map((o) => `<li>${esc(o)}</li>`).join("")}</ul>`;
   }
   const hasKey = state && state.settings.hasKey;
   $("askBtn").hidden = !hasKey;
-  $("askNote").textContent = hasKey ? "" : "Add your Anthropic API key in Settings and your buddy can write a fuller review from your own words.";
+  $("askNote").textContent = hasKey ? "" : "Add your own AI key (Claude, ChatGPT or Gemini) in Settings and your buddy can write a fuller review from your own words.";
 }
 $("askBtn").onclick = async () => {
   $("askBtn").disabled = true; $("askNote").textContent = "Reading your reflections…";
   try { insight = await act("askInsight"); $("askNote").textContent = ""; }
-  catch { $("askNote").textContent = "Couldn't reach Claude. Check your key and internet connection, then try again."; }
+  catch { $("askNote").textContent = `Couldn't reach ${(state && state.settings.aiName) || "your AI"}. Check your key and internet connection, then try again.`; }
   $("askBtn").disabled = false;
   renderReview();
 };

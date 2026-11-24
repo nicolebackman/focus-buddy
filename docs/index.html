@@ -135,7 +135,7 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 0.9rem; displ
       <div class="feat"><span class="dot" style="background:var(--sky)">↗</span><h3>A dashboard of your week</h3><p>Focus minutes per day, how you've felt while working, and every reflection you've written, all in one place.</p></div>
       <div class="feat"><span class="new">New in 1.2</span><h3>Pick your time's-up sound</h3><p>Keep the soft standard chime, or let your buddy tell you itself: a tomato pop, a puppy woof, a cat meow, a bunny squeak or a little bear roar.</p></div>
       <div class="feat"><span class="dot" style="background:var(--lime)">↑</span><h3>Stretch reminders that know you're away</h3><p>Once an hour without a timer, your buddy suggests a stretch. It doesn't count time you're away from the computer, and it stays quiet in the evenings.</p></div>
-      <div class="feat"><span class="dot" style="background:var(--violet);color:#fff">✦</span><h3>Smarter questions, if you want them</h3><p>Add your own Anthropic API key and Claude writes thoughtful follow-up questions and a weekly-style review of your patterns. Completely optional.</p></div>
+      <div class="feat"><span class="dot" style="background:var(--violet);color:#fff">✦</span><h3>Smarter questions, if you want them</h3><p>Add your own AI key (Claude, ChatGPT or Gemini) and your buddy asks thoughtful follow-up questions and reviews your patterns. Completely optional.</p></div>
     </div>
   </section>
 
@@ -191,8 +191,8 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 0.9rem; displ
       </div>
       <ul>
         <li>Saved in <code>~/Library/Application Support/Focus Buddy/</code>, only for your Mac user.</li>
-        <li>If you add an Anthropic API key, it's encrypted with your Mac's Keychain.</li>
-        <li>With a key saved, your answers and recent reflections are sent to Claude (Anthropic's AI) only to write follow-up questions and insights.</li>
+        <li>If you add your own AI key (Claude, ChatGPT or Gemini), your reflections are sent only to that AI, never to anyone else.</li>
+        <li>The key is encrypted with your Mac's Keychain.</li>
         <li>Without a key, nothing you write ever leaves your computer.</li>
         <li>The only other request is a check for new versions on GitHub.</li>
       </ul>
@@ -203,7 +203,7 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 0.9rem; displ
     <div class="head"><span class="eyebrow">Questions</span><h2>Good to know</h2></div>
     <details><summary>Does it work on Intel Macs?</summary><p>Not yet. The current build is for Macs with Apple chips (M1, M2, M3 and newer).</p></details>
     <details><summary>Where can I see everything I've written?</summary><p>Right-click your buddy (or click the tomato in the menu bar) and choose <b>Open dashboard</b>. Every check-in is listed there with the full conversation, and you can delete any of them.</p></details>
-    <details><summary>Do I need an API key?</summary><p>No. Without one, your buddy uses its own built-in questions. A key from <a href="https://console.anthropic.com/">console.anthropic.com</a> lets Claude ask more personal follow-ups and write insights. Usage is billed to your Anthropic account.</p></details>
+    <details><summary>Do I need an API key?</summary><p>No. Without one, your buddy uses its own built-in questions. With a key from <a href="https://console.anthropic.com/">Claude</a>, <a href="https://platform.openai.com/api-keys">ChatGPT</a> or <a href="https://aistudio.google.com/apikey">Gemini</a>, your buddy asks more personal follow-ups and writes insights. Any use is billed to your own account with that AI.</p></details>
     <details><summary>My buddy wandered off screen.</summary><p>Click the tomato in the menu bar and choose <b>Move buddy back to the corner</b>.</p></details>
     <details><summary>How do I remove all my data?</summary><p>Quit Focus Buddy, then delete the folder <code>~/Library/Application Support/Focus Buddy</code>. Deleting the app alone keeps your data.</p></details>
     <details><summary>How do I quit it?</summary><p>Click the tomato in the menu bar and choose <b>Quit Focus Buddy</b>.</p></details>

@@ -19,7 +19,7 @@
 - **A dashboard of your week.** Focus minutes, how you've felt while working, and every reflection you've written.
 - **Your own time's-up sound** *(new in 1.2)*. The standard chime, or your buddy's own voice: tomato pop, pup woof, cat meow, bunny squeak or bear roar.
 - **Stretch reminders** once an hour without a timer. Time away from the computer doesn't count, and quiet hours keep the evenings calm.
-- **Optional smarter questions.** Add your own Anthropic API key and Claude writes follow-up questions and reviews your patterns.
+- **Optional smarter questions.** Add your own AI key (Claude, ChatGPT or Gemini) and your buddy asks follow-up questions and reviews your patterns.
 
 <p align="center">
   <img src="docs/img/panel-timer.png" width="250" alt="Timer panel">
@@ -41,7 +41,7 @@ Needs a Mac with an Apple chip (M1 or newer). The app tells you when a new versi
 
 ## Your data
 
-Your reflections, settings and API key are saved only on your own Mac, in `~/Library/Application Support/Focus Buddy/`. The API key is encrypted with your Mac's Keychain. Without a key, nothing you write leaves your computer. See everything you've written under **Open dashboard** in the menu.
+Your reflections, settings and API key are saved only on your own Mac, in `~/Library/Application Support/Focus Buddy/`. If you add an AI key, your reflections are sent only to that AI, never to anyone else, and the key is encrypted with your Mac's Keychain. Without a key, nothing you write leaves your computer. See everything you've written under **Open dashboard** in the menu.
 
 ## Develop
 
@@ -55,7 +55,7 @@ npm start
 | Path | What it is |
 | --- | --- |
 | `main.js` | Main process: timer, saving, windows, menu bar, update check |
-| `ai.js` | The optional Claude calls |
+| `ai.js` | The optional AI calls (Claude, ChatGPT or Gemini, picked from the key) |
 | `renderer/` | The pet, panel and dashboard windows; `sounds.js` has the synthesized sounds |
 | `docs/` | The website (GitHub Pages) |
 | `tools/` | Release script and screenshot helpers |

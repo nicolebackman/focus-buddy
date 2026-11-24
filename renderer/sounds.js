@@ -4,20 +4,17 @@
 (function () {
   const ALARMS = {
     chime:  { label: "Chime" },
-    buddy:  { label: "My buddy" },
     pop:    { label: "Tomato pop", species: "tomato" },
     woof:   { label: "Pup woof",   species: "dog" },
     meow:   { label: "Cat meow",   species: "cat" },
     squeak: { label: "Bunny squeak", species: "bunny" },
     roar:   { label: "Bear roar",  species: "bear" },
   };
-  const VOICE_FOR = { tomato: "pop", dog: "woof", cat: "meow", bunny: "squeak", bear: "roar" };
   const RECORDED = ["pop", "woof", "meow", "roar"];
   // recordings are leveled to the same loudness; these keep them in line with the soft chime
   const FILE_VOLUME = { soft: 0.3, normal: 0.75 };
 
-  // "buddy" follows whichever pet is chosen.
-  const resolve = (alarm, species) => (alarm === "buddy" ? VOICE_FOR[species] || "chime" : ALARMS[alarm] ? alarm : "chime");
+  const resolve = (alarm) => (ALARMS[alarm] ? alarm : "chime");
 
   // the original soft marimba-like chime
   function chime(ctx, t0, peak, kind) {
@@ -51,9 +48,9 @@
   }
 
   // kind: "focus" | "break" | "nudge". Hourly nudges always use the gentle chime.
-  function play(ctx, { kind = "focus", volume = "soft", alarm = "chime", species = "tomato" } = {}) {
+  function play(ctx, { kind = "focus", volume = "soft", alarm = "chime" } = {}) {
     if (volume === "off") return;
-    const which = kind === "nudge" ? "chime" : resolve(alarm, species);
+    const which = kind === "nudge" ? "chime" : resolve(alarm);
     if (RECORDED.includes(which)) return playFile(which, volume);
     if (!ctx) return;
     const peak = volume === "normal" ? 0.12 : 0.045;
@@ -64,5 +61,5 @@
   // load the recordings up front so the first one plays without a delay
   if (typeof Audio !== "undefined") RECORDED.forEach((n) => { cache[n] = new Audio(`sounds/${n}.wav`); cache[n].preload = "auto"; });
 
-  window.Sounds = { ALARMS, VOICE_FOR, resolve, play };
+  window.Sounds = { ALARMS, resolve, play };
 })();

@@ -82,7 +82,6 @@ function fillSettings() {
   Object.entries(Sounds.ALARMS).forEach(([v, { label }]) => {
     const b = document.createElement("button");
     b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String((s.alarm || "chime") === v));
-    if (v === "buddy") b.title = "Plays the sound of whichever buddy you have";
     b.onclick = () => act("saveSettings", { alarm: v }).then(() => { act("previewChime", { alarm: v }); refresh(); });
     ap.appendChild(b);
   });

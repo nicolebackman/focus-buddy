@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS = {
 };
 const SPECIES = { tomato: ["Pip", "tomato"], dog: ["Bo", "pup"], cat: ["Miso", "cat"], bunny: ["Hops", "bunny"], bear: ["Nori", "bear"] };
 const COLORS = ["red", "violet", "chartreuse", "pink", "sky"];
-const ALARMS = ["chime", "buddy", "pop", "woof", "meow", "squeak", "roar"];
+const ALARMS = ["chime", "pop", "woof", "meow", "squeak", "roar"];
 const petName = () => (S().petName || "").trim() || (SPECIES[S().pet] || SPECIES.tomato)[0];
 const persona = () => ({ name: petName(), species: (SPECIES[S().pet] || SPECIES.tomato)[1] });
 let data = { settings: { ...DEFAULT_SETTINGS }, reflections: [], timer: null, apiKeyEnc: "", insight: null };
@@ -34,6 +34,7 @@ function load() {
     const raw = JSON.parse(text);
     data = { ...data, ...raw, settings: { ...DEFAULT_SETTINGS, ...(raw.settings || {}) } };
     if (!Array.isArray(data.reflections)) data.reflections = [];
+    if (!ALARMS.includes(data.settings.alarm)) data.settings.alarm = "chime"; // e.g. the removed "My buddy" option
     if (raw.settings && "sound" in raw.settings && !("volume" in raw.settings)) data.settings.volume = raw.settings.sound ? "soft" : "off";
     delete data.settings.sound;
   } catch (e) {

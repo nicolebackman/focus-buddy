@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "package": "electron-packager . \"Focus Buddy\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=build/icon.icns --app-bundle-id=local.pip.focusbuddy --ignore=^/dist --ignore=^/build/icon.iconset --ignore=^/tools --ignore=^/docs --ignore=^/release --ignore=^/node_modules/@fontsource-variable",
+    "package": "electron-packager . \"Focus Buddy\" --platform=darwin --arch=arm64 --out=dist --overwrite --icon=build/icon.icns --app-bundle-id=local.pip.focusbuddy --ignore=^/dist --ignore=^/build/icon.iconset --ignore=^/tools --ignore=^/docs --ignore=^/sounds-raw --ignore=^/release --ignore=^/node_modules/@fontsource-variable",
     "release": "bash tools/release.sh"
   },
   "dependencies": {

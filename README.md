@@ -10,7 +10,16 @@ A little pet that lives on your Mac desktop, runs your Pomodoro timer, nudges yo
 ## Install
 
 Download the latest `.zip` from the [Releases](../../releases) page, unzip it, and drag **Focus Buddy** into Applications.
-The first time, right-click the app and choose **Open** (it isn't signed with an Apple developer certificate).
+It isn't signed with an Apple developer certificate, so macOS blocks it the first time. Close the warning, open
+**System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Focus Buddy.
+(On macOS 14 or earlier you can instead right-click the app and choose **Open**.)
+
+If macOS says the app "is damaged and can't be opened" (releases 1.1.2 and earlier), run this in Terminal, then open it:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Focus Buddy.app"
+```
+
 The app checks this repository's releases and tells you when a new version is out.
 
 ## Develop
